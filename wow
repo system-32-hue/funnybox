@@ -1,0 +1,45 @@
+local tool = Instance.new("Tool")
+tool.Name = "Sign"
+tool.RequiresHandle = false
+tool.CanBeDropped = false
+
+tool.Parent = game:GetService("Players").PlayerAdded:Wait():WaitForChild("Backpack")
+
+local player = tool.Parent.Parent
+
+tool.Equipped:Connect(function()
+	local character = player.Character
+	if not character then return end
+
+	local head = character:FindFirstChild("Head")
+	if not head then return end
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "SignText"
+	gui.Size = UDim2.new(0, 300, 0, 80)
+	gui.StudsOffset = Vector3.new(0, 3, 0)
+	gui.AlwaysOnTop = true
+	gui.Parent = head
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Text = "(‿ˠ‿)"
+	text.TextScaled = true
+	text.TextColor3 = Color3.new(1, 1, 1)
+	text.TextStrokeTransparency = 0
+	text.Parent = gui
+end)
+
+tool.Unequipped:Connect(function()
+	local character = player.Character
+	if not character then return end
+
+	local head = character:FindFirstChild("Head")
+	if not head then return end
+
+	local gui = head:FindFirstChild("SignText")
+	if gui then
+		gui:Destroy()
+	end
+end)

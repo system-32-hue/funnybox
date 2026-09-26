@@ -1,0 +1,683 @@
+--made by system
+local Players = game:GetService("Players")
+local InsertService = game:GetService("InsertService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlayerToolbox"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local openBtn = Instance.new("TextButton")
+openBtn.Size = UDim2.new(0, 130, 0, 40)
+openBtn.Position = UDim2.new(0, 15, 0.5, -20)
+openBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+openBtn.TextColor3 = Color3.new(1, 1, 1)
+openBtn.Text = "Funny Toolbox"
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextSize = 16
+openBtn.Parent = screenGui
+
+local openCorner = Instance.new("UICorner")
+openCorner.CornerRadius = UDim.new(0, 8)
+openCorner.Parent = openBtn
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 380, 0, 520)
+main.Position = UDim2.new(0, 15, 0.5, -260)
+main.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+main.Visible = false
+main.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = main
+
+local top = Instance.new("Frame")
+top.Size = UDim2.new(1, 0, 0, 48)
+top.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
+top.Parent = main
+
+local search = Instance.new("TextBox")
+search.Size = UDim2.new(1, -100, 0, 34)
+search.Position = UDim2.new(0, 10, 0, 7)
+search.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+search.TextColor3 = Color3.new(1, 1, 1)
+search.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+search.PlaceholderText = "Pesquisar ou colar Asset ID..."
+search.Text = ""
+search.TextSize = 14
+search.Font = Enum.Font.Gotham
+search.ClearTextOnFocus = false
+search.Parent = top
+
+local searchCorner = Instance.new("UICorner")
+searchCorner.CornerRadius = UDim.new(0, 6)
+searchCorner.Parent = search
+
+local searchButton = Instance.new("TextButton")
+searchButton.Size = UDim2.new(0, 78, 0, 34)
+searchButton.Position = UDim2.new(1, -88, 0, 7)
+searchButton.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+searchButton.TextColor3 = Color3.new(1, 1, 1)
+searchButton.Text = "Buscar"
+searchButton.TextSize = 14
+searchButton.Font = Enum.Font.Gotham
+searchButton.Parent = top
+
+local searchBtnCorner = Instance.new("UICorner")
+searchBtnCorner.CornerRadius = UDim.new(0, 6)
+searchBtnCorner.Parent = searchButton
+
+local results = Instance.new("ScrollingFrame")
+results.Size = UDim2.new(1, 0, 1, -48)
+results.Position = UDim2.new(0, 0, 0, 48)
+results.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+results.ScrollBarThickness = 6
+results.CanvasSize = UDim2.new(0, 0, 0, 0)
+results.Parent = main
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 6)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = results
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 8)
+padding.PaddingBottom = UDim.new(0, 8)
+padding.PaddingLeft = UDim.new(0, 8)
+padding.PaddingRight = UDim.new(0, 8)
+padding.Parent = results
+
+local function updateCanvas()
+    results.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+end
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+
+local function clearResults()
+    for _, child in ipairs(results:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= layout and child ~= padding then
+            child:Destroy()
+        end
+    end
+end
+
+local function status(text)
+    clearResults()
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 90)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextSize = 14
+    label.Font = Enum.Font.Gotham
+    label.TextWrapped = true
+    label.Text = text
+    label.Parent = results
+
+    updateCanvas()
+end
+
+local function getSpawnCFrame()
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+
+    if root then
+        return root.CFrame * CFrame.new(0, 0, -12)
+    end
+
+    return CFrame.new(0, 5, 0)
+end
+
+-- ============================================
+-- FUNÇÕES PARA EXECUTAR SCRIPTS DOS MODELOS
+-- ============================================
+
+-- Função para criar ambiente completo para scripts
+local function createScriptEnvironment(scriptObj)
+    local env = {}
+    
+    -- Variáveis básicas
+    env.game = game
+    env.workspace = workspace
+    env.Players = Players
+    env.InsertService = InsertService
+    env.RunService = RunService
+    env.player = player
+    env.script = scriptObj
+    env.scriptObj = scriptObj
+    
+    -- Funções globais
+    env.print = print
+    env.warn = warn
+    env.error = error
+    env.pcall = pcall
+    env.xpcall = xpcall
+    env.wait = wait
+    env.task = task
+    env.tick = tick
+    env.time = time
+    env.require = require
+    env.loadstring = loadstring
+    env.getfenv = getfenv
+    env.setfenv = setfenv
+    env.getmetatable = getmetatable
+    env.setmetatable = setmetatable
+    env.rawequal = rawequal
+    env.rawget = rawget
+    env.rawset = rawset
+    env.tonumber = tonumber
+    env.tostring = tostring
+    env.type = type
+    env.typeof = typeof
+    env.pairs = pairs
+    env.ipairs = ipairs
+    env.next = next
+    env.select = select
+    env.unpack = unpack
+    env.newproxy = newproxy
+    env._G = _G
+    env._VERSION = _VERSION
+    
+    -- Tipos
+    env.Vector3 = Vector3
+    env.CFrame = CFrame
+    env.Color3 = Color3
+    env.UDim2 = UDim2
+    env.UDim = UDim
+    env.Instance = Instance
+    env.Enum = Enum
+    env.math = math
+    env.string = string
+    env.table = table
+    env.os = os
+    env.coroutine = coroutine
+    
+    -- Serviços comuns
+    local services = {
+        "ReplicatedStorage",
+        "ServerScriptService",
+        "ServerStorage",
+        "Lighting",
+        "SoundService",
+        "Debris",
+        "TweenService",
+        "PhysicsService",
+        "CollectionService",
+        "ContextActionService",
+        "GuiService",
+        "UserInputService",
+        "StarterGui",
+        "StarterPack",
+        "Teams",
+        "Chat",
+        "MarketplaceService",
+        "TeleportService",
+        "BadgeService",
+        "GamePassService",
+        "Workspace",
+        "Players",
+        "InsertService",
+        "RunService",
+        "HttpService",
+        "DataStoreService",
+        "MemoryStoreService",
+        "MessagingService"
+    }
+    
+    for _, serviceName in ipairs(services) do
+        pcall(function()
+            local service = game:GetService(serviceName)
+            if service then
+                env[serviceName] = service
+            end
+        end)
+    end
+    
+    return env
+end
+
+-- Função para executar um script individual
+local function executeSingleScript(source, scriptObj)
+    if not source or source == "" then
+        return false, "Script vazio"
+    end
+    
+    -- Compilar
+    local func, compileErr = loadstring(source)
+    if not func then
+        return false, "Erro de compilação: " .. tostring(compileErr)
+    end
+    
+    -- Criar ambiente
+    local env = createScriptEnvironment(scriptObj)
+    
+    -- Configurar ambiente
+    setfenv(func, env)
+    
+    -- Executar
+    local success, err = pcall(func)
+    if not success then
+        return false, "Erro de execução: " .. tostring(err)
+    end
+    
+    return true, nil
+end
+
+-- Função para executar todos os scripts de um container
+local function executeAllScripts(container)
+    local totalExecuted = 0
+    local errors = {}
+    
+    -- Coletar todos os scripts
+    local scripts = {}
+    local localScripts = {}
+    
+    for _, obj in ipairs(container:GetDescendants()) do
+        if obj:IsA("Script") then
+            table.insert(scripts, obj)
+        elseif obj:IsA("LocalScript") then
+            table.insert(localScripts, obj)
+        end
+    end
+    
+    -- Executar Scripts (server-side)
+    for _, scriptObj in ipairs(scripts) do
+        pcall(function()
+            -- Método 1: Ativar script
+            scriptObj.Disabled = true
+            task.wait(0.05)
+            scriptObj.Disabled = false
+            
+            -- Método 2: Executar código diretamente
+            local success, err = executeSingleScript(scriptObj.Source, scriptObj)
+            if success then
+                totalExecuted = totalExecuted + 1
+                print("[Toolbox] Script executado:", scriptObj.Name)
+            else
+                table.insert(errors, scriptObj.Name .. ": " .. tostring(err))
+                print("[Toolbox] Erro no script:", scriptObj.Name, "-", err)
+            end
+        end)
+    end
+    
+    -- Executar LocalScripts (client-side)
+    for _, scriptObj in ipairs(localScripts) do
+        pcall(function()
+            -- Clonar para PlayerGui
+            local clone = scriptObj:Clone()
+            clone.Disabled = true
+            clone.Parent = player:WaitForChild("PlayerGui")
+            
+            -- Executar código
+            local success, err = executeSingleScript(scriptObj.Source, clone)
+            if success then
+                totalExecuted = totalExecuted + 1
+                print("[Toolbox] LocalScript executado:", scriptObj.Name)
+            else
+                table.insert(errors, scriptObj.Name .. ": " .. tostring(err))
+                print("[Toolbox] Erro no LocalScript:", scriptObj.Name, "-", err)
+            end
+            
+            -- Ativar clone
+            clone.Disabled = false
+        end)
+    end
+    
+    return totalExecuted, errors
+end
+
+-- Função para executar scripts de ferramentas
+local function executeToolScripts(tool)
+    local executed = 0
+    
+    for _, obj in ipairs(tool:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") then
+            pcall(function()
+                local success = executeSingleScript(obj.Source, obj)
+                if success then
+                    executed = executed + 1
+                    print("[Toolbox] Script da ferramenta executado:", obj.Name)
+                end
+            end)
+        end
+    end
+    
+    return executed
+end
+
+-- Função para forçar execução de todos os scripts possíveis
+local function forceExecuteAll(model)
+    local total = 0
+    local errors = {}
+    
+    -- Executar scripts do modelo
+    local modelScripts, modelErrors = executeAllScripts(model)
+    total = total + modelScripts
+    for _, err in ipairs(modelErrors) do
+        table.insert(errors, err)
+    end
+    
+    -- Executar scripts de ferramentas
+    for _, tool in ipairs(model:GetDescendants()) do
+        if tool:IsA("Tool") then
+            local toolScripts = executeToolScripts(tool)
+            total = total + toolScripts
+        end
+    end
+    
+    return total, errors
+end
+
+-- ============================================
+-- FUNÇÕES ORIGINAIS MODIFICADAS
+-- ============================================
+
+local function moveToolsToBackpack(container)
+    local backpack = player:WaitForChild("Backpack")
+    local tools = {}
+
+    for _, obj in ipairs(container:GetDescendants()) do
+        if obj:IsA("Tool") then
+            table.insert(tools, obj)
+        end
+    end
+
+    for _, tool in ipairs(tools) do
+        local handle = tool:FindFirstChild("Handle")
+
+        if tool.RequiresHandle then
+            if handle and handle:IsA("BasePart") then
+                handle.Anchored = false
+                handle.CanCollide = false
+                handle.Massless = true
+            else
+                tool.RequiresHandle = false
+            end
+        end
+
+        tool.Parent = backpack
+        
+        -- Executar scripts da ferramenta
+        pcall(function()
+            executeToolScripts(tool)
+        end)
+    end
+
+    return #tools
+end
+
+local function prepareNormalObject(obj, spawnCF)
+    if obj:IsA("Model") then
+        pcall(function()
+            obj:PivotTo(spawnCF)
+        end)
+
+    elseif obj:IsA("BasePart") then
+        obj.CFrame = spawnCF
+    end
+end
+
+local function insertAsset(assetId)
+    assetId = tonumber(assetId)
+
+    if not assetId then
+        status("ID inválido.")
+        return
+    end
+
+    status("Carregando modelo " .. assetId .. "...")
+
+    local success, model = pcall(function()
+        return InsertService:LoadAsset(assetId)
+    end)
+
+    if not success or not model then
+        success, model = pcall(function()
+            local objects = game:GetObjects("rbxassetid://" .. assetId)
+
+            if objects and objects[1] then
+                local container = Instance.new("Model")
+
+                for _, obj in ipairs(objects) do
+                    obj.Parent = container
+                end
+
+                return container
+            end
+
+            return nil
+        end)
+    end
+
+    if not success or not model then
+        status(
+            "Falha ao carregar o modelo.\n\nID: "
+                .. assetId
+                .. "\n\nPossíveis causas:\n"
+                .. "• Modelo não é gratuito\n"
+                .. "• Modelo privado\n"
+                .. "• Asset bloqueado"
+        )
+        return
+    end
+
+    -- DEBUG: Mostrar scripts encontrados
+    local scriptCount = 0
+    for _, obj in ipairs(model:GetDescendants()) do
+        if obj:IsA("LuaSourceContainer") then
+            scriptCount = scriptCount + 1
+            print("[DEBUG] Script encontrado:", obj.Name, obj.ClassName)
+        end
+    end
+    print("[DEBUG] Total de scripts no modelo:", scriptCount)
+
+    -- EXECUTAR TODOS OS SCRIPTS DO MODELO
+    local totalScripts, scriptErrors = forceExecuteAll(model)
+
+    local spawnCF = getSpawnCFrame()
+    local toolCount = moveToolsToBackpack(model)
+
+    local normalObjects = {}
+
+    for _, obj in ipairs(model:GetChildren()) do
+        if not obj:IsA("Tool") then
+            table.insert(normalObjects, obj)
+        end
+    end
+
+    for _, obj in ipairs(normalObjects) do
+        obj.Parent = workspace
+        prepareNormalObject(obj, spawnCF)
+        
+        -- Executar scripts nos objetos individuais
+        pcall(function()
+            local objScripts = executeAllScripts(obj)
+            totalScripts = totalScripts + objScripts
+        end)
+    end
+
+    model:Destroy()
+
+    -- Status com informações
+    local scriptInfo = "\n\nScripts executados: " .. totalScripts
+    
+    if #scriptErrors > 0 then
+        scriptInfo = scriptInfo .. "\nErros: " .. #scriptErrors
+    end
+
+    if toolCount > 0 and #normalObjects > 0 then
+        status(
+            "Asset inserido!\n\n"
+                .. toolCount
+                .. " Tool(s) foram colocadas no Backpack.\n"
+                .. "O restante do modelo foi colocado no Workspace."
+                .. scriptInfo
+                .. "\n\nID: "
+                .. assetId
+        )
+    elseif toolCount > 0 then
+        status(
+            toolCount
+                .. " Tool(s) inseridas no Backpack!"
+                .. scriptInfo
+                .. "\n\nID: "
+                .. assetId
+        )
+    else
+        status("Modelo inserido!" .. scriptInfo .. "\n\nID: " .. assetId)
+    end
+end
+
+local function createResult(assetId, assetName, creatorName, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 100)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    frame.LayoutOrder = order
+    frame.Parent = results
+
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 8)
+    frameCorner.Parent = frame
+
+    local thumbnail = Instance.new("ImageLabel")
+    thumbnail.Size = UDim2.new(0, 80, 0, 80)
+    thumbnail.Position = UDim2.new(0, 8, 0, 10)
+    thumbnail.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    thumbnail.ScaleType = Enum.ScaleType.Fit
+    thumbnail.Image =
+        "rbxthumb://type=Asset&id="
+        .. tostring(assetId)
+        .. "&w=150&h=150"
+    thumbnail.Parent = frame
+
+    local thumbCorner = Instance.new("UICorner")
+    thumbCorner.CornerRadius = UDim.new(0, 6)
+    thumbCorner.Parent = thumbnail
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, -180, 0, 28)
+    nameLabel.Position = UDim2.new(0, 98, 0, 10)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.new(1, 1, 1)
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextSize = 14
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    nameLabel.Text = assetName or "Modelo"
+    nameLabel.Parent = frame
+
+    local creatorLabel = Instance.new("TextLabel")
+    creatorLabel.Size = UDim2.new(1, -180, 0, 20)
+    creatorLabel.Position = UDim2.new(0, 98, 0, 38)
+    creatorLabel.BackgroundTransparency = 1
+    creatorLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+    creatorLabel.TextXAlignment = Enum.TextXAlignment.Left
+    creatorLabel.TextSize = 12
+    creatorLabel.Font = Enum.Font.Gotham
+    creatorLabel.Text = "Criador: " .. tostring(creatorName or "?")
+    creatorLabel.Parent = frame
+
+    local idLabel = Instance.new("TextLabel")
+    idLabel.Size = UDim2.new(1, -180, 0, 18)
+    idLabel.Position = UDim2.new(0, 98, 0, 58)
+    idLabel.BackgroundTransparency = 1
+    idLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+    idLabel.TextXAlignment = Enum.TextXAlignment.Left
+    idLabel.TextSize = 11
+    idLabel.Font = Enum.Font.Gotham
+    idLabel.Text = "ID: " .. tostring(assetId)
+    idLabel.Parent = frame
+
+    local insertButton = Instance.new("TextButton")
+    insertButton.Size = UDim2.new(0, 70, 0, 28)
+    insertButton.Position = UDim2.new(1, -80, 1, -36)
+    insertButton.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+    insertButton.TextColor3 = Color3.new(1, 1, 1)
+    insertButton.Text = "Inserir"
+    insertButton.TextSize = 13
+    insertButton.Font = Enum.Font.GothamBold
+    insertButton.Parent = frame
+
+    local insertCorner = Instance.new("UICorner")
+    insertCorner.CornerRadius = UDim.new(0, 6)
+    insertCorner.Parent = insertButton
+
+    insertButton.MouseButton1Click:Connect(function()
+        insertAsset(assetId)
+    end)
+end
+
+local function searchAssets()
+    local query = search.Text:gsub("^%s+", ""):gsub("%s+$", "")
+
+    if query == "" then
+        status("Digite um nome ou um Asset ID.")
+        return
+    end
+
+    if tonumber(query) then
+        insertAsset(query)
+        return
+    end
+
+    clearResults()
+    status("Pesquisando...")
+
+    local success, pages = pcall(function()
+        return InsertService:GetFreeModels(query, 0)
+    end)
+
+    if not success or not pages then
+        status("Erro na pesquisa.\n\nTente colar o Asset ID direto.")
+        return
+    end
+
+    local list = pages
+
+    if typeof(pages) == "table" and pages[1] and pages[1].Results then
+        list = pages[1].Results
+    elseif typeof(pages) == "table" and pages.Results then
+        list = pages.Results
+    end
+
+    if not list or #list == 0 then
+        status("Nenhum modelo encontrado.\n\nTente outro nome ou cole o ID.")
+        return
+    end
+
+    clearResults()
+
+    for i, asset in ipairs(list) do
+        local id = asset.AssetId or asset.Id or asset.AssetID
+        local name = asset.Name or "Modelo"
+        local creator =
+            (asset.Creator and asset.Creator.Name)
+            or asset.CreatorName
+            or "?"
+
+        if id then
+            createResult(id, name, creator, i)
+        end
+    end
+
+    updateCanvas()
+end
+
+openBtn.MouseButton1Click:Connect(function()
+    main.Visible = not main.Visible
+end)
+
+searchButton.MouseButton1Click:Connect(searchAssets)
+
+search.FocusLost:Connect(function(enter)
+    if enter then
+        searchAssets()
+    end
+end)
+
+status("try 101906362110391")

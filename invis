@@ -1,0 +1,118 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local invisible = {}
+
+local function applyInvisible(player)
+	local character = player.Character
+	if not character then return end
+
+	for _, obj in ipairs(character:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			obj.Transparency = 1
+			obj.CastShadow = false
+		elseif obj:IsA("Decal") or obj:IsA("Texture") then
+			obj.Transparency = 1
+		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+			obj.Enabled = false
+		elseif obj:IsA("Highlight") then
+			obj.Enabled = false
+		end
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	end
+end
+
+local function applyVisible(player)
+	local character = player.Character
+	if not character then return end
+
+	for _, obj in ipairs(character:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			if obj.Name == "HumanoidRootPart" then
+				obj.Transparency = 1
+			else
+				obj.Transparency = 0
+			end
+			obj.CastShadow = true
+		elseif obj:IsA("Decal") or obj:IsA("Texture") then
+			obj.Transparency = 0
+		elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+			obj.Enabled = true
+		elseif obj:IsA("Highlight") then
+			obj.Enabled = true
+		end
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+	end
+end
+
+local function createTool(player)
+	local backpack = player:WaitForChild("Backpack")
+
+	local old = backpack:FindFirstChild("Invis Me")
+	if old then
+		old:Destroy()
+	end
+
+	local tool = Instance.new("Tool")
+	tool.Name = "Invis Me"
+	tool.RequiresHandle = false
+	tool.CanBeDropped = false
+	tool.Parent = backpack
+
+	tool.Activated:Connect(function()
+		invisible[player] = not invisible[player]
+
+		if invisible[player] then
+			applyInvisible(player)
+		else
+			applyVisible(player)
+		end
+	end)
+end
+
+local function setupPlayer(player)
+	invisible[player] = false
+
+	player.CharacterAdded:Connect(function(character)
+		invisible[player] = false
+
+		task.wait(1)
+		createTool(player)
+
+		character.DescendantAdded:Connect(function()
+			if invisible[player] then
+				task.wait()
+				applyInvisible(player)
+			end
+		end)
+	end)
+
+	task.wait(1)
+	createTool(player)
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
+
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(setupPlayer, player)
+end
+
+RunService.Heartbeat:Connect(function()
+	for player, isInvisible in pairs(invisible) do
+		if isInvisible then
+			applyInvisible(player)
+		end
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	invisible[player] = nil
+end)

@@ -1,1 +1,373 @@
+--made by system
+local Players = game:GetService("Players")
+local InsertService = game:GetService("InsertService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Criar RemoteEvent para enviar objetos ao servidor
+local remoteEvent = Instance.new("RemoteEvent")
+remoteEvent.Name = "AssetSpawner"
+remoteEvent.Parent = ReplicatedStorage
+
+-- Script do servidor (injetado via executor)
+local serverScript = Instance.new("Script")
+serverScript.Name = "AssetSpawnerServer"
+serverScript.Source = [[
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local remoteEvent = ReplicatedStorage:WaitForChild("AssetSpawner")
+
+remoteEvent.OnServerEvent:Connect(function(player, objects)
+    if not objects or #objects == 0 then return end
+    
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    
+    local spawnCF = CFrame.new(0, 50, 0)
+    if root then
+        spawnCF = root.CFrame * CFrame.new(0, 0, -12)
+    end
+    
+    -- Spawnar cada objeto no workspace (visível para TODOS)
+    for _, obj in ipairs(objects) do
+        if obj:IsA("Tool") then
+            obj.Parent = player:WaitForChild("Backpack")
+        else
+            obj.Parent = workspace
+            if obj:IsA("Model") then
+                pcall(function()
+                    obj:PivotTo(spawnCF)
+                end)
+            elseif obj:IsA("BasePart") then
+                obj.CFrame = spawnCF
+            end
+        end
+    end
+end)
+]]
+serverScript.Parent = ReplicatedStorage
+
+-- GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PlayerToolbox"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local openBtn = Instance.new("TextButton")
+openBtn.Size = UDim2.new(0, 130, 0, 40)
+openBtn.Position = UDim2.new(0, 15, 0.5, -20)
+openBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+openBtn.TextColor3 = Color3.new(1, 1, 1)
+openBtn.Text = "Funny Toolbox"
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextSize = 16
+openBtn.Parent = screenGui
+
+local openCorner = Instance.new("UICorner")
+openCorner.CornerRadius = UDim.new(0, 8)
+openCorner.Parent = openBtn
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 380, 0, 520)
+main.Position = UDim2.new(0, 15, 0.5, -260)
+main.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+main.Visible = false
+main.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = main
+
+local top = Instance.new("Frame")
+top.Size = UDim2.new(1, 0, 0, 48)
+top.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
+top.Parent = main
+
+local search = Instance.new("TextBox")
+search.Size = UDim2.new(1, -100, 0, 34)
+search.Position = UDim2.new(0, 10, 0, 7)
+search.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+search.TextColor3 = Color3.new(1, 1, 1)
+search.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+search.PlaceholderText = "Pesquisar ou colar Asset ID..."
+search.Text = ""
+search.TextSize = 14
+search.Font = Enum.Font.Gotham
+search.ClearTextOnFocus = false
+search.Parent = top
+
+local searchCorner = Instance.new("UICorner")
+searchCorner.CornerRadius = UDim.new(0, 6)
+searchCorner.Parent = search
+
+local searchButton = Instance.new("TextButton")
+searchButton.Size = UDim2.new(0, 78, 0, 34)
+searchButton.Position = UDim2.new(1, -88, 0, 7)
+searchButton.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+searchButton.TextColor3 = Color3.new(1, 1, 1)
+searchButton.Text = "Buscar"
+searchButton.TextSize = 14
+searchButton.Font = Enum.Font.Gotham
+searchButton.Parent = top
+
+local searchBtnCorner = Instance.new("UICorner")
+searchBtnCorner.CornerRadius = UDim.new(0, 6)
+searchBtnCorner.Parent = searchButton
+
+local results = Instance.new("ScrollingFrame")
+results.Size = UDim2.new(1, 0, 1, -48)
+results.Position = UDim2.new(0, 0, 0, 48)
+results.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+results.ScrollBarThickness = 6
+results.CanvasSize = UDim2.new(0, 0, 0, 0)
+results.Parent = main
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 6)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = results
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 8)
+padding.PaddingBottom = UDim.new(0, 8)
+padding.PaddingLeft = UDim.new(0, 8)
+padding.PaddingRight = UDim.new(0, 8)
+padding.Parent = results
+
+local function updateCanvas()
+    results.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+end
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
+
+local function clearResults()
+    for _, child in ipairs(results:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= layout and child ~= padding then
+            child:Destroy()
+        end
+    end
+end
+
+local function status(text)
+    clearResults()
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 90)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextSize = 14
+    label.Font = Enum.Font.Gotham
+    label.TextWrapped = true
+    label.Text = text
+    label.Parent = results
+
+    updateCanvas()
+end
+
+-- Função para inserir asset
+local function insertAsset(assetId)
+    assetId = tonumber(assetId)
+
+    if not assetId then
+        status("ID inválido.")
+        return
+    end
+
+    status("Carregando " .. assetId .. "...")
+
+    -- Carregar no cliente (executor roda no cliente)
+    local success, objects = pcall(function()
+        local model = InsertService:LoadAsset(assetId)
+        local container = {}
+        for _, obj in ipairs(model:GetChildren()) do
+            table.insert(container, obj)
+        end
+        model:Destroy()
+        return container
+    end)
+
+    if not success or not objects or #objects == 0 then
+        status("Falha ao carregar o modelo.\n\nID: " .. assetId)
+        return
+    end
+
+    -- Enviar objetos para o servidor spawnar para TODOS
+    remoteEvent:FireServer(objects)
+    
+    status("✓ Asset " .. assetId .. " spawnado para TODOS!")
+end
+
+local function createResult(assetId, assetName, creatorName, order)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 100)
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    frame.LayoutOrder = order
+    frame.Parent = results
+
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 8)
+    frameCorner.Parent = frame
+
+    local thumbnail = Instance.new("ImageLabel")
+    thumbnail.Size = UDim2.new(0, 80, 0, 80)
+    thumbnail.Position = UDim2.new(0, 8, 0, 10)
+    thumbnail.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    thumbnail.ScaleType = Enum.ScaleType.Fit
+    thumbnail.Image = "rbxthumb://type=Asset&id=" .. tostring(assetId) .. "&w=150&h=150"
+    thumbnail.Parent = frame
+
+    local thumbCorner = Instance.new("UICorner")
+    thumbCorner.CornerRadius = UDim.new(0, 6)
+    thumbCorner.Parent = thumbnail
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, -180, 0, 28)
+    nameLabel.Position = UDim2.new(0, 98, 0, 10)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.new(1, 1, 1)
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextSize = 14
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    nameLabel.Text = assetName or "Modelo"
+    nameLabel.Parent = frame
+
+    local creatorLabel = Instance.new("TextLabel")
+    creatorLabel.Size = UDim2.new(1, -180, 0, 20)
+    creatorLabel.Position = UDim2.new(0, 98, 0, 38)
+    creatorLabel.BackgroundTransparency = 1
+    creatorLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+    creatorLabel.TextXAlignment = Enum.TextXAlignment.Left
+    creatorLabel.TextSize = 12
+    creatorLabel.Font = Enum.Font.Gotham
+    creatorLabel.Text = "Criador: " .. tostring(creatorName or "?")
+    creatorLabel.Parent = frame
+
+    local idLabel = Instance.new("TextLabel")
+    idLabel.Size = UDim2.new(1, -180, 0, 18)
+    idLabel.Position = UDim2.new(0, 98, 0, 58)
+    idLabel.BackgroundTransparency = 1
+    idLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+    idLabel.TextXAlignment = Enum.TextXAlignment.Left
+    idLabel.TextSize = 11
+    idLabel.Font = Enum.Font.Gotham
+    idLabel.Text = "ID: " .. tostring(assetId)
+    idLabel.Parent = frame
+
+    local insertButton = Instance.new("TextButton")
+    insertButton.Size = UDim2.new(0, 70, 0, 28)
+    insertButton.Position = UDim2.new(1, -80, 1, -36)
+    insertButton.BackgroundColor3 = Color3.fromRGB(70, 130, 70)
+    insertButton.TextColor3 = Color3.new(1, 1, 1)
+    insertButton.Text = "Inserir"
+    insertButton.TextSize = 13
+    insertButton.Font = Enum.Font.GothamBold
+    insertButton.Parent = frame
+
+    local insertCorner = Instance.new("UICorner")
+    insertCorner.CornerRadius = UDim.new(0, 6)
+    insertCorner.Parent = insertButton
+
+    insertButton.MouseButton1Click:Connect(function()
+        insertAsset(assetId)
+    end)
+end
+
+local function searchAssets()
+    local query = search.Text:gsub("^%s+", ""):gsub("%s+$", "")
+
+    if query == "" then
+        status("Digite um nome ou um Asset ID.")
+        return
+    end
+
+    if tonumber(query) then
+        insertAsset(query)
+        return
+    end
+
+    clearResults()
+    status("Pesquisando...")
+
+    -- Usar API de busca rápida
+    local success, response = pcall(function()
+        local url = "https://catalog.roblox.com/v1/search/items/details?Category=3&Limit=10&Query=" .. HttpService:UrlEncode(query)
+        return HttpService:GetAsync(url)
+    end)
+
+    if success and response then
+        local data = HttpService:JSONDecode(response)
+        local list = data.data or {}
+        
+        if #list == 0 then
+            status("Nenhum modelo encontrado.")
+            return
+        end
+
+        clearResults()
+
+        for i, asset in ipairs(list) do
+            local id = asset.id
+            local name = asset.name
+            local creator = asset.creator and asset.creator.name or "?"
+            
+            if id then
+                createResult(id, name, creator, i)
+            end
+        end
+
+        updateCanvas()
+    else
+        -- Fallback para InsertService
+        local success2, pages = pcall(function()
+            return InsertService:GetFreeModels(query, 0)
+        end)
+
+        if not success2 or not pages then
+            status("Erro na pesquisa.")
+            return
+        end
+
+        local list = pages
+        if typeof(pages) == "table" and pages[1] and pages[1].Results then
+            list = pages[1].Results
+        end
+
+        if not list or #list == 0 then
+            status("Nenhum modelo encontrado.")
+            return
+        end
+
+        clearResults()
+
+        for i, asset in ipairs(list) do
+            local id = asset.AssetId or asset.Id or asset.AssetID
+            local name = asset.Name or "Modelo"
+            local creator = (asset.Creator and asset.Creator.Name) or asset.CreatorName or "?"
+
+            if id then
+                createResult(id, name, creator, i)
+            end
+        end
+
+        updateCanvas()
+    end
+end
+
+-- Conexões
+openBtn.MouseButton1Click:Connect(function()
+    main.Visible = not main.Visible
+end)
+
+searchButton.MouseButton1Click:Connect(searchAssets)
+
+search.FocusLost:Connect(function(enter)
+    if enter then
+        searchAssets()
+    end
+end)
+
+status("Pronto! Cole um Asset ID ou pesquise.")

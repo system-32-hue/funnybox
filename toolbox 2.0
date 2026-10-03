@@ -7,12 +7,12 @@ local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Criar RemoteEvent para enviar objetos ao servidor
+
 local remoteEvent = Instance.new("RemoteEvent")
 remoteEvent.Name = "AssetSpawner"
 remoteEvent.Parent = ReplicatedStorage
 
--- Script do servidor (injetado via executor)
+
 local serverScript = Instance.new("Script")
 serverScript.Name = "AssetSpawnerServer"
 serverScript.Source = [[
@@ -31,7 +31,7 @@ remoteEvent.OnServerEvent:Connect(function(player, objects)
         spawnCF = root.CFrame * CFrame.new(0, 0, -12)
     end
     
-    -- Spawnar cada objeto no workspace (visível para TODOS)
+   
     for _, obj in ipairs(objects) do
         if obj:IsA("Tool") then
             obj.Parent = player:WaitForChild("Backpack")
@@ -50,9 +50,9 @@ end)
 ]]
 serverScript.Parent = ReplicatedStorage
 
--- GUI
+
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PlayerToolbox"
+screenGui.Name = math.random(1,999).. math.random(1,999)
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 

@@ -5,7 +5,7 @@ local backpack = player:WaitForChild("Backpack")
 local playerGui = player:WaitForChild("PlayerGui")
 
 local tool = Instance.new("Tool")
-tool.Name = "Sign"
+tool.Name = "DO IT!"
 tool.RequiresHandle = false
 tool.CanBeDropped = false
 tool.Parent = backpack

@@ -5,29 +5,29 @@ local Function = {}
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- Player Selection GUI System
-local PlayerSelectGUI = {
+-- Player/NPC Selection GUI System
+local SelectGUI = {
     ScreenGui = nil,
     Frame = nil,
-    PlayerList = {},
-    SelectedPlayer = nil,
+    EntityList = {},
+    SelectedEntity = nil,
     Visible = false
 }
 
-function PlayerSelectGUI:Create()
+function SelectGUI:Create()
     if self.ScreenGui then
         self.ScreenGui:Destroy()
     end
     
     self.ScreenGui = Instance.new("ScreenGui")
-    self.ScreenGui.Name = "PlayerSelectGUI"
+    self.ScreenGui.Name = "SelectGUI"
     self.ScreenGui.ResetOnSpawn = false
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
     
     -- Main Frame
     self.Frame = Instance.new("Frame")
-    self.Frame.Size = UDim2.new(0, 300, 0, 400)
-    self.Frame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    self.Frame.Size = UDim2.new(0, 350, 0, 500)
+    self.Frame.Position = UDim2.new(0.5, -175, 0.5, -250)
     self.Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     self.Frame.BackgroundTransparency = 0.1
     self.Frame.BorderSizePixel = 0
@@ -39,9 +39,9 @@ function PlayerSelectGUI:Create()
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, 0, 0, 40)
     Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Title.Text = "SELECT PLAYER"
+    Title.Text = "SELECT ENTITY (PLAYERS + NPCS)"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 18
+    Title.TextSize = 16
     Title.Font = Enum.Font.GothamBold
     Title.Parent = self.Frame
     
@@ -59,10 +59,57 @@ function PlayerSelectGUI:Create()
         self:Toggle()
     end)
     
-    -- Player List Frame
+    -- Filter buttons
+    local FilterFrame = Instance.new("Frame")
+    FilterFrame.Size = UDim2.new(1, 0, 0, 40)
+    FilterFrame.Position = UDim2.new(0, 0, 0, 40)
+    FilterFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    FilterFrame.Parent = self.Frame
+    
+    local PlayersBtn = Instance.new("TextButton")
+    PlayersBtn.Size = UDim2.new(0.5, -5, 0, 30)
+    PlayersBtn.Position = UDim2.new(0, 5, 0, 5)
+    PlayersBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+    PlayersBtn.Text = "PLAYERS"
+    PlayersBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PlayersBtn.TextSize = 14
+    PlayersBtn.Font = Enum.Font.GothamBold
+    PlayersBtn.Parent = FilterFrame
+    PlayersBtn.MouseButton1Click:Connect(function()
+        self:Refresh("Players")
+    end)
+    
+    local NPCsBtn = Instance.new("TextButton")
+    NPCsBtn.Size = UDim2.new(0.5, -5, 0, 30)
+    NPCsBtn.Position = UDim2.new(0.5, 0, 0, 5)
+    NPCsBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+    NPCsBtn.Text = "NPCS"
+    NPCsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NPCsBtn.TextSize = 14
+    NPCsBtn.Font = Enum.Font.GothamBold
+    NPCsBtn.Parent = FilterFrame
+    NPCsBtn.MouseButton1Click:Connect(function()
+        self:Refresh("NPCs")
+    end)
+    
+    -- All Button
+    local AllBtn = Instance.new("TextButton")
+    AllBtn.Size = UDim2.new(1, -10, 0, 30)
+    AllBtn.Position = UDim2.new(0, 5, 0, 80)
+    AllBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+    AllBtn.Text = "ALL"
+    AllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AllBtn.TextSize = 14
+    AllBtn.Font = Enum.Font.GothamBold
+    AllBtn.Parent = self.Frame
+    AllBtn.MouseButton1Click:Connect(function()
+        self:Refresh("All")
+    end)
+    
+    -- Entity List Frame
     local ListFrame = Instance.new("ScrollingFrame")
-    ListFrame.Size = UDim2.new(1, 0, 1, -50)
-    ListFrame.Position = UDim2.new(0, 0, 0, 45)
+    ListFrame.Size = UDim2.new(1, 0, 1, -125)
+    ListFrame.Position = UDim2.new(0, 0, 0, 115)
     ListFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     ListFrame.BackgroundTransparency = 0.5
     ListFrame.BorderSizePixel = 0
@@ -71,25 +118,23 @@ function PlayerSelectGUI:Create()
     ListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
     ListFrame.Parent = self.Frame
     
-    -- Refresh Button
-    local RefreshBtn = Instance.new("TextButton")
-    RefreshBtn.Size = UDim2.new(0, 100, 0, 30)
-    RefreshBtn.Position = UDim2.new(0, 10, 0, 5)
-    RefreshBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    RefreshBtn.Text = "REFRESH"
-    RefreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    RefreshBtn.TextSize = 14
-    RefreshBtn.Font = Enum.Font.GothamBold
-    RefreshBtn.Parent = self.Frame
-    RefreshBtn.MouseButton1Click:Connect(function()
-        self:Refresh()
-    end)
-    
-    self:Refresh()
+    self:Refresh("All")
 end
 
-function PlayerSelectGUI:Refresh()
+function SelectGUI:GetNPCs()
+    local npcs = {}
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(v) then
+            table.insert(npcs, v)
+        end
+    end
+    return npcs
+end
+
+function SelectGUI:Refresh(filter)
     if not self.Frame then return end
+    
+    filter = filter or "All"
     
     -- Clear old buttons
     for _, v in pairs(self.Frame:FindFirstChild("ScrollingFrame"):GetChildren()) do
@@ -100,31 +145,59 @@ function PlayerSelectGUI:Refresh()
     
     local ListFrame = self.Frame:FindFirstChild("ScrollingFrame")
     local yPos = 0
+    local entities = {}
     
-    -- Add player buttons
-    for _, player in ipairs(Players:GetPlayers()) do
-        local PlayerBtn = Instance.new("TextButton")
-        PlayerBtn.Size = UDim2.new(1, -20, 0, 35)
-        PlayerBtn.Position = UDim2.new(0, 10, 0, yPos)
-        PlayerBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        PlayerBtn.Text = player.Name
-        PlayerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        PlayerBtn.TextSize = 14
-        PlayerBtn.Font = Enum.Font.Gotham
-        PlayerBtn.Parent = ListFrame
+    -- Get entities based on filter
+    if filter == "Players" or filter == "All" then
+        for _, player in ipairs(Players:GetPlayers()) do
+            table.insert(entities, {Type = "Player", Name = player.Name, Entity = player})
+        end
+    end
+    
+    if filter == "NPCs" or filter == "All" then
+        for _, npc in ipairs(self:GetNPCs()) do
+            table.insert(entities, {Type = "NPC", Name = npc.Name, Entity = npc})
+        end
+    end
+    
+    -- Add entity buttons
+    for _, entity in ipairs(entities) do
+        local EntityBtn = Instance.new("TextButton")
+        EntityBtn.Size = UDim2.new(1, -20, 0, 35)
+        EntityBtn.Position = UDim2.new(0, 10, 0, yPos)
         
-        -- Highlight if selected
-        if player == self.SelectedPlayer then
-            PlayerBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+        -- Color based on type
+        if entity.Type == "Player" then
+            EntityBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
+        else
+            EntityBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
         end
         
-        PlayerBtn.MouseButton1Click:Connect(function()
-            self.SelectedPlayer = player
-            self:Refresh()
-            -- Execute morph on selected player
-            if player.Character then
-                Function.CharacterExecute(player.Character, player.Name)
-                warn("Executed morph on: " .. player.Name)
+        EntityBtn.Text = ("[%s] %s"):format(entity.Type, entity.Name)
+        EntityBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        EntityBtn.TextSize = 14
+        EntityBtn.Font = Enum.Font.Gotham
+        EntityBtn.Parent = ListFrame
+        
+        -- Highlight if selected
+        if entity.Entity == self.SelectedEntity then
+            EntityBtn.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+        end
+        
+        EntityBtn.MouseButton1Click:Connect(function()
+            self.SelectedEntity = entity.Entity
+            self:Refresh(filter)
+            
+            -- Execute morph on selected entity
+            local character = entity.Entity
+            if entity.Type == "Player" then
+                character = entity.Entity.Character
+            end
+            
+            if character and character:FindFirstChildOfClass("Humanoid") then
+                local dataName = character.Name
+                Function.CharacterExecute(character, dataName)
+                warn("Executed morph on: " .. dataName)
             end
         end)
         
@@ -135,7 +208,7 @@ function PlayerSelectGUI:Refresh()
     ListFrame.CanvasSize = UDim2.new(0, 0, 0, yPos + 10)
 end
 
-function PlayerSelectGUI:Toggle()
+function SelectGUI:Toggle()
     self.Visible = not self.Visible
     if self.ScreenGui then
         self.ScreenGui.Enabled = self.Visible
@@ -3800,7 +3873,7 @@ function run(Player)
     end
 
     -- REMOVED: Auto execution on local player
-    -- The script now only executes when you select a player via GUI or commands
+    -- The script now only executes when you select a player or NPC via GUI
 
     local RenderConnect = RunService.RenderStepped:Connect(function()
         for PlayerName, DataList in pairs(PlayerData) do
@@ -3976,9 +4049,15 @@ function run(Player)
                 Function.CharacterExecute(Player.Character, Player.Name)
             end
             if input.KeyCode == Enum.KeyCode.B then
+                -- Apply to all players
                 for i,v in pairs(Players:GetPlayers()) do
                     Function.CharacterExecute(v.Character,v.Name)
                 end
+                -- Apply to all NPCs
+                for _, npc in ipairs(SelectGUI:GetNPCs()) do
+                    Function.CharacterExecute(npc, npc.Name)
+                end
+                warn("Applied morph to all players and NPCs")
             end
             if input.KeyCode == Enum.KeyCode.P then
                 local partList = Function.PartListDefault()
@@ -3996,6 +4075,13 @@ function run(Player)
                         Function.CharacterExecute(player.Character, player.Name)
                         warn("Morph changed to " ..morph)
                         
+                    end)
+                end
+                -- Apply to NPCs too
+                for _, npc in ipairs(SelectGUI:GetNPCs()) do
+                    task.spawn(function()
+                        PlayerData[npc.Name]["SelectedMorph"] = Function.PartListDefault()[morph]
+                        Function.CharacterExecute(npc, npc.Name)
                     end)
                 end
             end
@@ -4020,7 +4106,7 @@ function run(Player)
                 local clickConn = nil
                 clickConn = playerMouse.Button1Down:Connect(function()
                     local selectedCharacter = highlight.Parent 
-                    if selectedCharacter then
+                    if selectedCharacter and selectedCharacter:FindFirstChildOfClass("Humanoid") then
                         Function.CharacterExecute(selectedCharacter, selectedCharacter.Name)
                     end
                     updateConn:Disconnect() 
@@ -4029,8 +4115,8 @@ function run(Player)
                 end)
             end
             if input.KeyCode == Enum.KeyCode.V then
-                PlayerSelectGUI:Toggle()
-                warn("Toggled Player Selection GUI")
+                SelectGUI:Toggle()
+                warn("Toggled Entity Selection GUI")
             end
 
 
@@ -4043,7 +4129,17 @@ function run(Player)
         local Command = TextChatMessage.Text
         Command = string.split(Command, " ")
         if Command[1] == "/execute" then
-            Function.CharacterExecute(workspace:FindFirstChild(Command[2]),Command[2])
+            local target = workspace:FindFirstChild(Command[2])
+            if target and target:FindFirstChildOfClass("Humanoid") then
+                Function.CharacterExecute(target, target.Name)
+            end
+        end
+        if Command[1] == "/executenpc" then
+            for _, npc in ipairs(SelectGUI:GetNPCs()) do
+                if npc.Name == Command[2] then
+                    Function.CharacterExecute(npc, npc.Name)
+                end
+            end
         end
     end)
 
